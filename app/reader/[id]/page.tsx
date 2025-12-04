@@ -14,6 +14,7 @@ import { useSettingsStore } from "@/lib/stores/settingsStore";
 import { documentStorage } from "@/lib/storage/documentStorage";
 import { progressStorage } from "@/lib/storage/progressStorage";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
+import { AppHeader } from "@/components/shared/AppHeader";
 import { Button } from "@/components/ui/button";
 import { tokenizeWords } from "@/lib/rsvp/wordTokenizer";
 
@@ -28,6 +29,8 @@ export default function ReaderPage() {
   const wpm = useSettingsStore((state) => state.wpm);
   const setWPM = useSettingsStore((state) => state.setWPM);
   const chunkSize = useSettingsStore((state) => state.chunkSize);
+  const focusMode = useSettingsStore((state) => state.focusMode);
+  const toggleFocusMode = useSettingsStore((state) => state.toggleFocusMode);
 
   const document = getDocument(documentId);
 
@@ -95,7 +98,14 @@ export default function ReaderPage() {
     onSkipBackward: () => rsvp.skipBackward(1),
     onWPMIncrease: () => setWPM(Math.min(1000, wpm + 50)),
     onWPMDecrease: () => setWPM(Math.max(100, wpm - 50)),
-    onEscape: () => router.push("/"),
+    onEscape: () => {
+      if (focusMode) {
+        toggleFocusMode();
+      } else {
+        router.push("/");
+      }
+    },
+    onToggleFocus: () => toggleFocusMode(),
     enabled: !!document,
   });
 
@@ -112,32 +122,55 @@ export default function ReaderPage() {
     );
   }
 
+  // Focus mode: show only the reading pane
+  if (focusMode) {
+    return (
+      <div className="relative h-screen w-screen overflow-hidden bg-background">
+        <RSVPReader chunk={rsvp.currentChunk} />
+        {/* Minimal exit button - low opacity, full opacity on hover */}
+        <div className="absolute top-4 right-4 opacity-30 hover:opacity-100 transition-opacity">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={toggleFocusMode}
+            className="h-10 w-10 bg-background/90 backdrop-blur-sm border-2"
+            aria-label="Exit focus mode (F or Esc)"
+            title="Exit focus mode (F or Esc)"
+          >
+            ✕
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex h-screen flex-col">
-      {/* Header */}
-      <header className="border-b p-2 sm:p-4 bg-background sticky top-0 z-10">
+      <AppHeader />
+      
+      {/* Document title bar */}
+      <div className="border-b p-2 sm:p-3 bg-background">
         <div className="container mx-auto flex items-center justify-between gap-2">
-          <div className="flex-1 min-w-0 flex items-center">
+          <h1 className="text-sm sm:text-lg font-semibold truncate flex-1">
+            {document.title}
+          </h1>
+          <div className="flex items-center gap-2 flex-shrink-0">
             <Button
-              variant="ghost"
+              variant="outline"
               size="sm"
-              onClick={() => router.push("/")}
-              className="text-sm flex-shrink-0"
+              onClick={toggleFocusMode}
+              className="text-xs sm:text-sm"
+              title="Focus mode (F)"
             >
-              ← Library
+              🔍 Focus
             </Button>
-            <h1 className="ml-2 sm:ml-4 text-sm sm:text-lg font-semibold truncate">
-              {document.title}
-            </h1>
-          </div>
-          <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
             <SettingsDrawer />
             <div className="hidden sm:block">
               <KeyboardHelp />
             </div>
           </div>
         </div>
-      </header>
+      </div>
 
       {/* Main content */}
       <div className="flex flex-1 overflow-hidden">

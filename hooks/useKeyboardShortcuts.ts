@@ -9,6 +9,7 @@ interface KeyboardShortcutsOptions {
   onWPMIncrease?: () => void;
   onWPMDecrease?: () => void;
   onEscape?: () => void;
+  onToggleFocus?: () => void;
   enabled?: boolean;
 }
 
@@ -19,6 +20,7 @@ export function useKeyboardShortcuts({
   onWPMIncrease,
   onWPMDecrease,
   onEscape,
+  onToggleFocus,
   enabled = true,
 }: KeyboardShortcutsOptions) {
   useEffect(() => {
@@ -62,6 +64,14 @@ export function useKeyboardShortcuts({
           e.preventDefault();
           onEscape?.();
           break;
+        case "f":
+        case "F":
+          // Only toggle focus if not typing in an input
+          if (!e.ctrlKey && !e.metaKey && !e.altKey) {
+            e.preventDefault();
+            onToggleFocus?.();
+          }
+          break;
       }
     };
 
@@ -75,6 +85,7 @@ export function useKeyboardShortcuts({
     onWPMIncrease,
     onWPMDecrease,
     onEscape,
+    onToggleFocus,
   ]);
 }
 

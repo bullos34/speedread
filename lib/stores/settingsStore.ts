@@ -8,6 +8,8 @@ interface SettingsState extends Settings {
   setFontFamily: (family: Settings["fontFamily"]) => void;
   setTheme: (theme: Settings["theme"]) => void;
   setChunkSize: (chunkSize: number) => void;
+  setFocusMode: (focusMode: boolean) => void;
+  toggleFocusMode: () => void;
 }
 
 const defaultSettings: Settings = {
@@ -16,6 +18,7 @@ const defaultSettings: Settings = {
   fontFamily: "system",
   theme: "system",
   chunkSize: 1,
+  focusMode: false,
 };
 
 export const useSettingsStore = create<SettingsState>()(
@@ -27,6 +30,8 @@ export const useSettingsStore = create<SettingsState>()(
       setFontFamily: (fontFamily) => set({ fontFamily }),
       setTheme: (theme) => set({ theme }),
       setChunkSize: (chunkSize) => set({ chunkSize: Math.max(1, Math.min(3, chunkSize)) }),
+      setFocusMode: (focusMode) => set({ focusMode }),
+      toggleFocusMode: () => set((state) => ({ focusMode: !state.focusMode })),
     }),
     {
       name: "speedread-settings",

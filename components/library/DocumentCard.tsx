@@ -45,6 +45,7 @@ export function DocumentCard({ document }: DocumentCardProps) {
     pdf: "PDF",
     txt: "TXT",
     docx: "DOCX",
+    url: "URL",
   };
 
   return (

@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { tokenizeWords, isSentenceEnd } from "./wordTokenizer";
-import type { Document } from "@/types";
+import type { Document, ReadingSession } from "@/types";
+import { analyticsStorage } from "@/lib/storage/analyticsStorage";
 
 interface UseRSVPOptions {
   document: Document | null;
@@ -40,6 +41,11 @@ export function useRSVP({
   const [isPlaying, setIsPlaying] = useState(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const lastSavedIndexRef = useRef(0);
+  
+  // Session tracking
+  const sessionRef = useRef<ReadingSession | null>(null);
+  const sessionStartIndexRef = useRef(0);
+  const sessionStartTimeRef = useRef<number | null>(null);
 
   // Tokenize document text when document changes
   useEffect(() => {
@@ -81,10 +87,73 @@ export function useRSVP({
     [onProgressUpdate, autoSaveInterval]
   );
 
+  // Start session tracking
+  const startSession = useCallback(() => {
+    if (!document) return;
+    
+    const sessionId = crypto.randomUUID();
+    const startTime = Date.now();
+    sessionStartTimeRef.current = startTime;
+    // Use setCurrentIndex to get current value without adding to dependencies
+    setCurrentIndex((prevIndex) => {
+      sessionStartIndexRef.current = prevIndex;
+      return prevIndex; // Don't change index
+    });
+
+    sessionRef.current = {
+      id: sessionId,
+      documentId: document.id,
+      startTime,
+      endTime: null,
+      wordsRead: 0,
+      averageWPM: 0,
+      duration: 0,
+    };
+  }, [document]);
+
+  // End session tracking
+  const endSession = useCallback(() => {
+    if (!sessionRef.current || !sessionStartTimeRef.current) return;
+
+    const session = sessionRef.current; // Capture reference before async operation
+    const endTime = Date.now();
+    const duration = endTime - sessionStartTimeRef.current;
+    const startIndex = sessionStartIndexRef.current;
+    
+    // Use setCurrentIndex to get current value without adding to dependencies
+    setCurrentIndex((prevIndex) => {
+      const wordsRead = Math.max(0, prevIndex - startIndex);
+      
+      // Calculate average WPM for this session
+      const averageWPM = duration > 0 ? Math.round((wordsRead / (duration / 60000))) : 0;
+
+      if (session) {
+        session.endTime = endTime;
+        session.wordsRead = wordsRead;
+        session.duration = duration;
+        session.averageWPM = averageWPM;
+
+        // Save session to analytics
+        if (wordsRead > 0) {
+          analyticsStorage.addSession(session);
+        }
+      }
+
+      sessionRef.current = null;
+      sessionStartTimeRef.current = null;
+      return prevIndex; // Don't change index
+    });
+  }, []);
+
   // Play function
   const play = useCallback(() => {
     if (words.length === 0) {
       return;
+    }
+
+    // Start tracking session if not already started
+    if (!sessionRef.current) {
+      startSession();
     }
 
     setIsPlaying(true);
@@ -131,7 +200,7 @@ export function useRSVP({
     intervalRef.current = setTimeout(() => {
       scheduleNext();
     }, interval);
-  }, [words, currentIndex, chunkSize, getInterval, saveProgressIfNeeded]);
+  }, [words, currentIndex, chunkSize, getInterval, saveProgressIfNeeded, startSession]);
 
   // Pause function
   const pause = useCallback(() => {
@@ -145,7 +214,9 @@ export function useRSVP({
       onProgressUpdate(currentIndex);
       lastSavedIndexRef.current = currentIndex;
     }
-  }, [currentIndex, onProgressUpdate]);
+    // End session tracking
+    endSession();
+  }, [currentIndex, onProgressUpdate, endSession]);
 
   // Restart function
   const restart = useCallback(() => {
@@ -200,8 +271,10 @@ export function useRSVP({
       if (intervalRef.current) {
         clearTimeout(intervalRef.current);
       }
+      // End session on unmount
+      endSession();
     };
-  }, []);
+  }, [endSession]);
 
   // Update interval when WPM or chunkSize changes while playing
   useEffect(() => {

@@ -22,9 +22,10 @@ import { useRouter } from "next/navigation";
 
 export function AddDocumentDialog() {
   const [open, setOpen] = useState(false);
-  const [mode, setMode] = useState<"paste" | "upload">("paste");
+  const [mode, setMode] = useState<"paste" | "upload" | "url">("paste");
   const [title, setTitle] = useState("");
   const [pastedText, setPastedText] = useState("");
+  const [url, setUrl] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const addDocument = useDocumentStore((state) => state.addDocument);
@@ -76,6 +77,71 @@ export function AddDocumentDialog() {
       setPastedText("");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create document");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleUrlImport = async () => {
+    if (!url.trim()) {
+      setError("Please enter a URL");
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const response = await fetch("/api/parse-url", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ url: url.trim() }),
+      });
+
+      const result = await response.json();
+
+      if (!result.success || !result.text) {
+        setError(result.error || "Failed to parse URL");
+        setIsLoading(false);
+        return;
+      }
+
+      const words = tokenizeWords(result.text);
+      const documentTitle = title.trim() || result.title || "Imported Article";
+
+      const document: Document = {
+        id: crypto.randomUUID(),
+        title: documentTitle,
+        body: result.text,
+        sourceType: "paste", // Treat URL imports as paste for now
+        createdAt: Date.now(),
+        lastReadPosition: 0,
+        lastWPM: defaultWPM,
+        totalWords: words.length,
+        lastUpdated: Date.now(),
+      };
+
+      // Save to storage
+      documentStorage.saveDocument(document);
+
+      // Update store
+      const allDocuments = documentStorage.loadDocuments();
+      setDocuments(allDocuments);
+
+      // Navigate to reader
+      router.push(`/reader/${document.id}`);
+      setOpen(false);
+      setTitle("");
+      setUrl("");
+      setPastedText("");
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Failed to import from URL. Please check the URL and try again."
+      );
     } finally {
       setIsLoading(false);
     }
@@ -143,7 +209,7 @@ export function AddDocumentDialog() {
         <DialogHeader>
           <DialogTitle>Add Document</DialogTitle>
           <DialogDescription>
-            Paste text or upload a file to start reading
+            Paste text, upload a file, or import from URL
           </DialogDescription>
         </DialogHeader>
 
@@ -157,7 +223,7 @@ export function AddDocumentDialog() {
               }}
               className="flex-1"
             >
-              Paste Text
+              Paste
             </Button>
             <Button
               variant={mode === "upload" ? "default" : "outline"}
@@ -167,7 +233,17 @@ export function AddDocumentDialog() {
               }}
               className="flex-1"
             >
-              Upload File
+              Upload
+            </Button>
+            <Button
+              variant={mode === "url" ? "default" : "outline"}
+              onClick={() => {
+                setMode("url");
+                setError(null);
+              }}
+              className="flex-1"
+            >
+              URL
             </Button>
           </div>
 
@@ -191,6 +267,32 @@ export function AddDocumentDialog() {
                 rows={10}
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               />
+            </div>
+          ) : mode === "url" ? (
+            <div className="space-y-2">
+              <Label htmlFor="url">Article URL</Label>
+              <input
+                id="url"
+                type="url"
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+                placeholder="https://example.com/article"
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                disabled={isLoading}
+              />
+              <Label htmlFor="url-title">Title (optional)</Label>
+              <input
+                id="url-title"
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Leave empty to use page title"
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                disabled={isLoading}
+              />
+              <p className="text-xs text-muted-foreground">
+                The article text will be extracted from the webpage
+              </p>
             </div>
           ) : (
             <div className="space-y-2">
@@ -228,7 +330,11 @@ export function AddDocumentDialog() {
 
           {isLoading && (
             <div className="text-center text-sm text-muted-foreground">
-              {mode === "upload" ? "Parsing file..." : "Processing..."}
+              {mode === "upload"
+                ? "Parsing file..."
+                : mode === "url"
+                ? "Fetching and parsing article..."
+                : "Processing..."}
             </div>
           )}
         </div>
@@ -240,6 +346,11 @@ export function AddDocumentDialog() {
           {mode === "paste" && (
             <Button onClick={handlePasteSubmit} disabled={isLoading}>
               Start Reading
+            </Button>
+          )}
+          {mode === "url" && (
+            <Button onClick={handleUrlImport} disabled={isLoading || !url.trim()}>
+              Import & Read
             </Button>
           )}
         </DialogFooter>
