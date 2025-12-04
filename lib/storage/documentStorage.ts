@@ -9,9 +9,9 @@ export const documentStorage = {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (!stored) return [];
-      const documents = JSON.parse(stored);
+      const documents: Document[] = JSON.parse(stored);
       // Remove duplicates by keeping the last occurrence of each ID
-      const uniqueDocuments = Array.from(
+      const uniqueDocuments: Document[] = Array.from(
         new Map(documents.map((doc: Document) => [doc.id, doc])).values()
       );
       // If duplicates were found, save the cleaned version
