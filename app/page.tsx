@@ -6,6 +6,7 @@ import { InsightsPanel } from "@/components/shared/InsightsPanel";
 import { HeroSection } from "@/components/dashboard/HeroSection";
 import { EmptyState } from "@/components/dashboard/EmptyState";
 import { RecentDocuments } from "@/components/dashboard/RecentDocuments";
+import { TutorialsSection } from "@/components/dashboard/TutorialsSection";
 import { AppHeader } from "@/components/shared/AppHeader";
 import { useDocumentStore } from "@/lib/stores/documentStore";
 import { documentStorage } from "@/lib/storage/documentStorage";
@@ -91,6 +92,11 @@ export default function Home() {
             <DocumentList />
           </div>
         )}
+
+        {/* Tutorials & Support Section */}
+        <div className="mt-8 sm:mt-12">
+          <TutorialsSection />
+        </div>
       </main>
     </div>
   );

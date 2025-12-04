@@ -16,7 +16,7 @@ import { useSettingsStore } from "@/lib/stores/settingsStore";
 import { parseFile, normalizePastedText } from "@/lib/parsers";
 import { documentStorage } from "@/lib/storage/documentStorage";
 import { tokenizeWords } from "@/lib/rsvp/wordTokenizer";
-import { FocusedWordBox } from "@/components/branding/FocusedWordBox";
+import { PrimaryLogo } from "@/components/branding/PrimaryLogo";
 import type { Document } from "@/types";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -184,8 +184,8 @@ export function HeroSection() {
   return (
     <div className="rounded-lg border bg-gradient-to-br from-primary/5 to-primary/10 p-6 sm:p-8 md:p-12 text-center">
       <div className="flex justify-center mb-4 sm:mb-6">
-        <FocusedWordBox width={280} height={76} className="hidden sm:block" />
-        <FocusedWordBox width={220} height={60} className="block sm:hidden" />
+        <PrimaryLogo size="lg" className="hidden sm:block" />
+        <PrimaryLogo size="md" className="block sm:hidden" />
       </div>
       <p className="text-base sm:text-lg text-muted-foreground mb-6 sm:mb-8 max-w-2xl mx-auto">
         Read faster with RSVP. Paste text, upload files, or import articles and start speed reading instantly.
