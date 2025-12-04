@@ -7,12 +7,13 @@ import type { Document } from "@/types";
 interface UseRSVPOptions {
   document: Document | null;
   wpm: number;
+  chunkSize: number; // Number of words to display at once (1-3)
   onProgressUpdate?: (wordIndex: number) => void;
   autoSaveInterval?: number; // Save progress every N words
 }
 
 interface UseRSVPReturn {
-  currentWord: string;
+  currentChunk: string; // The current chunk of words to display
   currentIndex: number;
   totalWords: number;
   isPlaying: boolean;
@@ -30,6 +31,7 @@ const SENTENCE_END_DELAY_MULTIPLIER = 1.5; // 50% extra delay on sentence ending
 export function useRSVP({
   document,
   wpm,
+  chunkSize,
   onProgressUpdate,
   autoSaveInterval = 10,
 }: UseRSVPOptions): UseRSVPReturn {
@@ -89,6 +91,9 @@ export function useRSVP({
 
     const scheduleNext = () => {
       setCurrentIndex((prevIndex) => {
+        // Advance by chunkSize, but don't go past the last word
+        const nextIndex = Math.min(prevIndex + chunkSize, words.length - 1);
+        
         if (prevIndex >= words.length - 1) {
           setIsPlaying(false);
           if (intervalRef.current) {
@@ -98,10 +103,10 @@ export function useRSVP({
           return prevIndex;
         }
 
-        const nextIndex = prevIndex + 1;
         saveProgressIfNeeded(nextIndex);
-        const nextWord = words[nextIndex];
-        const interval = getInterval(nextWord);
+        // Use the last word in the chunk for interval calculation (for sentence endings)
+        const lastWordInChunk = words[Math.min(nextIndex + chunkSize - 1, words.length - 1)];
+        const interval = getInterval(lastWordInChunk);
 
         if (intervalRef.current) {
           clearTimeout(intervalRef.current);
@@ -126,7 +131,7 @@ export function useRSVP({
     intervalRef.current = setTimeout(() => {
       scheduleNext();
     }, interval);
-  }, [words, currentIndex, getInterval, saveProgressIfNeeded]);
+  }, [words, currentIndex, chunkSize, getInterval, saveProgressIfNeeded]);
 
   // Pause function
   const pause = useCallback(() => {
@@ -198,10 +203,10 @@ export function useRSVP({
     };
   }, []);
 
-  // Update interval when WPM changes while playing
+  // Update interval when WPM or chunkSize changes while playing
   useEffect(() => {
     if (isPlaying && words.length > 0 && currentIndex < words.length) {
-      // Restart playback with new WPM
+      // Restart playback with new WPM or chunkSize
       const wasPlaying = isPlaying;
       pause();
       if (wasPlaying) {
@@ -212,14 +217,26 @@ export function useRSVP({
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [wpm]); // Only react to WPM changes
+  }, [wpm, chunkSize]); // React to WPM and chunkSize changes
 
-  const currentWord = words[currentIndex] || "";
+  // Get current chunk of words
+  const getCurrentChunk = useCallback((): string => {
+    if (words.length === 0 || currentIndex >= words.length) {
+      return "";
+    }
+    const chunk: string[] = [];
+    for (let i = 0; i < chunkSize && currentIndex + i < words.length; i++) {
+      chunk.push(words[currentIndex + i]);
+    }
+    return chunk.join(" ");
+  }, [words, currentIndex, chunkSize]);
+
+  const currentChunk = getCurrentChunk();
   const totalWords = words.length;
   const progress = totalWords > 0 ? (currentIndex / totalWords) * 100 : 0;
 
   return {
-    currentWord,
+    currentChunk,
     currentIndex,
     totalWords,
     isPlaying,

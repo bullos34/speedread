@@ -4,7 +4,7 @@ import { useSettingsStore } from "@/lib/stores/settingsStore";
 import { cn } from "@/lib/utils";
 
 interface RSVPReaderProps {
-  word: string;
+  chunk: string; // Chunk of words to display
   className?: string;
 }
 
@@ -15,7 +15,7 @@ const fontFamilyMap = {
   "sans-serif": "Inter, sans-serif",
 };
 
-export function RSVPReader({ word, className }: RSVPReaderProps) {
+export function RSVPReader({ chunk, className }: RSVPReaderProps) {
   const fontSize = useSettingsStore((state) => state.fontSize);
   const fontFamily = useSettingsStore((state) => state.fontFamily);
 
@@ -37,7 +37,7 @@ export function RSVPReader({ word, className }: RSVPReaderProps) {
         aria-live="polite"
         aria-label="Current word"
       >
-        {word || "Ready to read"}
+        {chunk || "Ready to read"}
       </div>
     </div>
   );

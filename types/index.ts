@@ -22,6 +22,7 @@ export interface Settings {
   fontSize: number;
   fontFamily: "system" | "serif" | "mono" | "sans-serif";
   theme: "light" | "dark" | "system";
+  chunkSize: number; // Number of words to display at once (1-3)
 }
 
 export interface ParserResult {

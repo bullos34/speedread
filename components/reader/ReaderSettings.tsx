@@ -17,9 +17,11 @@ export function ReaderSettings() {
   const wpm = useSettingsStore((state) => state.wpm);
   const fontSize = useSettingsStore((state) => state.fontSize);
   const fontFamily = useSettingsStore((state) => state.fontFamily);
+  const chunkSize = useSettingsStore((state) => state.chunkSize);
   const setWPM = useSettingsStore((state) => state.setWPM);
   const setFontSize = useSettingsStore((state) => state.setFontSize);
   const setFontFamily = useSettingsStore((state) => state.setFontFamily);
+  const setChunkSize = useSettingsStore((state) => state.setChunkSize);
 
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
@@ -54,6 +56,21 @@ export function ReaderSettings() {
           value={[fontSize]}
           onValueChange={([value]) => setFontSize(value)}
         />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="chunk-size-slider">Words per Chunk: {chunkSize}</Label>
+        <Slider
+          id="chunk-size-slider"
+          min={1}
+          max={3}
+          step={1}
+          value={[chunkSize]}
+          onValueChange={([value]) => setChunkSize(value)}
+        />
+        <p className="text-xs text-muted-foreground">
+          Display {chunkSize === 1 ? "1 word" : `${chunkSize} words`} at a time
+        </p>
       </div>
 
       <div className="space-y-2">

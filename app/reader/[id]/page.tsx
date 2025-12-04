@@ -27,6 +27,7 @@ export default function ReaderPage() {
   const setCurrentDocument = useDocumentStore((state) => state.setCurrentDocument);
   const wpm = useSettingsStore((state) => state.wpm);
   const setWPM = useSettingsStore((state) => state.setWPM);
+  const chunkSize = useSettingsStore((state) => state.chunkSize);
 
   const document = getDocument(documentId);
 
@@ -77,6 +78,7 @@ export default function ReaderPage() {
   const rsvp = useRSVP({
     document: document || null,
     wpm,
+    chunkSize,
     onProgressUpdate: handleProgressUpdate,
   });
 
@@ -142,7 +144,7 @@ export default function ReaderPage() {
         {/* Reader area */}
         <div className="flex flex-1 flex-col w-full">
           <div className="flex-1 min-h-0">
-            <RSVPReader word={rsvp.currentWord} />
+            <RSVPReader chunk={rsvp.currentChunk} />
           </div>
           <div className="border-t p-2 sm:p-4">
             <ProgressIndicator

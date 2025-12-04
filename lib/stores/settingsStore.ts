@@ -7,6 +7,7 @@ interface SettingsState extends Settings {
   setFontSize: (size: number) => void;
   setFontFamily: (family: Settings["fontFamily"]) => void;
   setTheme: (theme: Settings["theme"]) => void;
+  setChunkSize: (chunkSize: number) => void;
 }
 
 const defaultSettings: Settings = {
@@ -14,6 +15,7 @@ const defaultSettings: Settings = {
   fontSize: 48,
   fontFamily: "system",
   theme: "system",
+  chunkSize: 1,
 };
 
 export const useSettingsStore = create<SettingsState>()(
@@ -24,6 +26,7 @@ export const useSettingsStore = create<SettingsState>()(
       setFontSize: (fontSize) => set({ fontSize: Math.max(24, Math.min(72, fontSize)) }),
       setFontFamily: (fontFamily) => set({ fontFamily }),
       setTheme: (theme) => set({ theme }),
+      setChunkSize: (chunkSize) => set({ chunkSize: Math.max(1, Math.min(3, chunkSize)) }),
     }),
     {
       name: "speedread-settings",
