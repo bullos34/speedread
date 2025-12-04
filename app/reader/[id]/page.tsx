@@ -126,14 +126,23 @@ export default function ReaderPage() {
   if (focusMode) {
     return (
       <div className="relative h-screen w-screen overflow-hidden bg-background">
-        <RSVPReader chunk={rsvp.currentChunk} />
-        {/* Minimal exit button - low opacity, full opacity on hover */}
-        <div className="absolute top-4 right-4 opacity-30 hover:opacity-100 transition-opacity">
+        <RSVPReader 
+          chunk={rsvp.currentChunk}
+          onTap={() => {
+            if (rsvp.isPlaying) {
+              rsvp.pause();
+            } else {
+              rsvp.play();
+            }
+          }}
+        />
+        {/* Exit button - more visible on mobile, subtle on desktop */}
+        <div className="absolute top-4 right-4 opacity-60 sm:opacity-30 hover:opacity-100 transition-opacity">
           <Button
             variant="outline"
             size="icon"
             onClick={toggleFocusMode}
-            className="h-10 w-10 bg-background/90 backdrop-blur-sm border-2"
+            className="h-12 w-12 sm:h-10 sm:w-10 bg-background/90 backdrop-blur-sm border-2"
             aria-label="Exit focus mode (F or Esc)"
             title="Exit focus mode (F or Esc)"
           >
@@ -176,9 +185,18 @@ export default function ReaderPage() {
       <div className="flex flex-1 overflow-hidden">
         {/* Reader area */}
         <div className="flex flex-1 flex-col w-full">
-          <div className="flex-1 min-h-0">
-            <RSVPReader chunk={rsvp.currentChunk} />
-          </div>
+                <div className="flex-1 min-h-0">
+                  <RSVPReader 
+                    chunk={rsvp.currentChunk}
+                    onTap={() => {
+                      if (rsvp.isPlaying) {
+                        rsvp.pause();
+                      } else {
+                        rsvp.play();
+                      }
+                    }}
+                  />
+                </div>
           <div className="border-t p-2 sm:p-4">
             <ProgressIndicator
               currentIndex={rsvp.currentIndex}
